@@ -1,0 +1,30 @@
+{
+  "wave": "Wave 3 — coherence",
+  "percent": 88,
+  "now": "Running product is live on :3000. Critic is judging chat, studio, and the three-panel against Gemini Notebook.",
+  "live": "Critic",
+  "updated": "wave 3",
+  "pieces": [
+    { "icon": "◎", "name": "Progress surface", "detail": "A public build log so you can watch every piece land.", "status": "pass" },
+    { "icon": "◇", "name": "Design system & chrome", "detail": "Paper, type, five themes, three-panel NotebookLM grammar.", "status": "pass" },
+    { "icon": "▣", "name": "Home & notebook library", "detail": "Covered notebooks, recents, search, create, pin, archive.", "status": "pass" },
+    { "icon": "⬡", "name": "Plugin kernel & BYOK vault", "detail": "Models, embedders, TTS, ingest, store, research — keys stay on disk.", "status": "pass" },
+    { "icon": "▤", "name": "Source ingestion", "detail": "PDF, DOCX, MD, URL, YouTube, audio, image, paste, EPUB, CSV, drag-drop.", "status": "pass" },
+    { "icon": "※", "name": "Grounded retrieval & citations", "detail": "BM25 + sentence evidence. Citation chips open the passage.", "status": "pass" },
+    { "icon": "◈", "name": "Chat experience", "detail": "Goals, length, source filters, save-to-note, suggested questions.", "status": "critic" },
+    { "icon": "▦", "name": "Studio factory", "detail": "Audio, video, slides, mind map, reports, cards, quiz, table, infographic.", "status": "pass" },
+    { "icon": "♪", "name": "Audio & video overviews", "detail": "Two-host script + browser speech. Join the conversation.", "status": "critic" },
+    { "icon": "✎", "name": "Notes & source viewer", "detail": "Split reading, highlights, notes from chat.", "status": "pass" },
+    { "icon": "↗", "name": "Deep research", "detail": "Plan, search the notebook, optional web, save as a source.", "status": "pass" },
+    { "icon": "✦", "name": "Customization & themes", "detail": "Paper / Ink / Parchment / Gemini / High contrast. Every plugin configurable.", "status": "pass" }
+  ],
+  "log": [
+    { "t": "19:26", "m": "Empty repo. Product name: Noteb." },
+    { "t": "19:27", "m": "Progress surface live on :4173." },
+    { "t": "19:41", "m": "App live on :3000 with seed notebooks." },
+    { "t": "19:44", "m": "Critic: chat dumped titles. Builder sent back." },
+    { "t": "19:46", "m": "Sentence-first evidence. Short sources now answer." },
+    { "t": "19:48", "m": "Studio factory verified for 8 artifact kinds." },
+    { "t": "19:50", "m": "Coherence pass: tighter default answers, joinable audio, YouTube tab." }
+  ]
+}

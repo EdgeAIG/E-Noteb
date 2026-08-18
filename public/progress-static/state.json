@@ -1,0 +1,28 @@
+{
+  "wave": "Wave 2 — critic on the running product",
+  "percent": 78,
+  "now": "Chat now answers short sources. Studio factory is live. Blind comparison next.",
+  "live": "Critic",
+  "updated": "wave 2",
+  "pieces": [
+    { "icon": "◎", "name": "Progress surface", "detail": "A public build log so you can watch every piece land.", "status": "pass" },
+    { "icon": "◇", "name": "Design system & chrome", "detail": "Paper, type, motion, and the three-panel NotebookLM grammar.", "status": "building" },
+    { "icon": "▣", "name": "Home & notebook library", "detail": "Covered notebooks, recents, search, create, pin, archive.", "status": "building" },
+    { "icon": "⬡", "name": "Plugin kernel & BYOK vault", "detail": "Every model, embedder, TTS, ingest, store, and research tool is a plugin.", "status": "building" },
+    { "icon": "▤", "name": "Source ingestion", "detail": "PDF, DOCX, MD, URL, YouTube, audio, image, paste, EPUB, CSV.", "status": "building" },
+    { "icon": "※", "name": "Grounded retrieval & citations", "detail": "Chunk, retrieve, quote, and chip back to the exact passage.", "status": "building" },
+    { "icon": "◈", "name": "Chat experience", "detail": "Goals, length, source filters, streaming, save-to-note.", "status": "building" },
+    { "icon": "▦", "name": "Studio factory", "detail": "Audio, video, slides, mind map, reports, cards, quiz, table, infographic.", "status": "building" },
+    { "icon": "♪", "name": "Audio & video overviews", "detail": "Two-host podcast and cinematic explainer, joinable mid-stream.", "status": "queued" },
+    { "icon": "✎", "name": "Notes & source viewer", "detail": "Split reading, highlights, pinned notes, convert chat to note.", "status": "building" },
+    { "icon": "↗", "name": "Deep research", "detail": "Plan, search, synthesize, and write a cited briefing.", "status": "building" },
+    { "icon": "✦", "name": "Customization & themes", "detail": "Every surface, voice, model, and storage target is yours.", "status": "building" }
+  ],
+  "log": [
+    { "t": "19:26", "m": "Empty repo detected. Product name: Noteb." },
+    { "t": "19:27", "m": "Progress surface is live." },
+    { "t": "19:28", "m": "Plugin kernel, store, RAG, ingest, studio, seed notebook written." },
+    { "t": "19:36", "m": "Three-panel workspace, studio viewers, settings vault written." },
+    { "t": "19:41", "m": "Dependencies installed. Dev server starting on :3000." }
+  ]
+}

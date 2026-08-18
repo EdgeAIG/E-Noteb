@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Noteb — live build</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #f4efe6;
+      --ink: #1c1915;
+      --muted: #6b645b;
+      --line: #ddd4c6;
+      --card: #fffdf8;
+      --teal: #0f6e62;
+      --gold: #c48a2a;
+      --rose: #b4543c;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: "DM Sans", system-ui, sans-serif; }
+    body { min-height: 100vh; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 40px 24px 80px; }
+    header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 36px; }
+    .mark { display: flex; align-items: center; gap: 12px; }
+    .logo { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(145deg, #1a8a7a, #0b4f47); box-shadow: 0 8px 20px rgba(15,110,98,.25); position: relative; }
+    .logo:after { content: ""; position: absolute; inset: 8px 9px 8px 11px; border: 1.5px solid rgba(255,255,255,.85); border-radius: 2px 6px 2px 2px; }
+    h1 { font-family: Newsreader, Georgia, serif; font-size: 34px; font-weight: 600; margin: 0; letter-spacing: -.02em; }
+    .sub { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
+    .pulse { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--teal); font-weight: 600; }
+    .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--teal); animation: blink 1.4s infinite; }
+    @keyframes blink { 50% { opacity: .25; } }
+    .hero { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px 24px; margin-bottom: 22px; box-shadow: 0 1px 0 rgba(255,255,255,.7) inset; }
+    .bar { height: 8px; background: #ece4d6; border-radius: 99px; overflow: hidden; margin: 14px 0 8px; }
+    .fill { height: 100%; width: 0%; background: linear-gradient(90deg, #0f6e62, #2a9d8f); border-radius: 99px; transition: width .6s ease; }
+    .meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; }
+    .grid { display: grid; gap: 10px; }
+    .piece { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: 28px 1fr auto; gap: 12px; align-items: start; }
+    .piece h3 { margin: 0; font-size: 14.5px; font-weight: 600; }
+    .piece p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+    .badge { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 4px 8px; border-radius: 99px; }
+    .queued { color: #8a8176; background: #efe8dc; }
+    .building { color: #8a5a10; background: #f6e4bc; }
+    .critic { color: #7a2e22; background: #f4d2ca; }
+    .pass { color: #0d5c52; background: #d5efe9; }
+    .fail { color: #7a2e22; background: #f4d2ca; }
+    .log { margin-top: 22px; background: #1c1915; color: #efe8dc; border-radius: 16px; padding: 16px 18px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.55; max-height: 280px; overflow: auto; }
+    .log b { color: #8fd0c4; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="mark">
+          <div class="logo"></div>
+          <h1>Noteb</h1>
+        </div>
+        <p class="sub">Self-hosted, plugin-first research notebook. Built in public against Gemini Notebook.</p>
+      </div>
+      <div class="pulse"><span class="dot"></span><span id="live">Building</span></div>
+    </header>
+    <section class="hero">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <strong id="wave">Wave 0 — scaffolding</strong>
+        <span id="pct">0%</span>
+      </div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="meta">
+        <span id="now">Starting kernel…</span>
+        <span id="clock"></span>
+      </div>
+    </section>
+    <div class="grid" id="pieces"></div>
+    <div class="log" id="log"></div>
+  </div>
+  <script>
+    async function tick() {
+      try {
+        const r = await fetch("state.json?t=" + Date.now(), { cache: "no-store" });
+        const s = await r.json();
+        document.getElementById("wave").textContent = s.wave;
+        document.getElementById("pct").textContent = s.percent + "%";
+        document.getElementById("fill").style.width = s.percent + "%";
+        document.getElementById("now").textContent = s.now;
+        document.getElementById("live").textContent = s.live;
+        document.getElementById("clock").textContent = s.updated;
+        document.getElementById("pieces").innerHTML = s.pieces.map((p) => `
+          <article class="piece">
+            <div>${p.icon}</div>
+            <div><h3>${p.name}</h3><p>${p.detail}</p></div>
+            <span class="badge ${p.status}">${p.status}</span>
+          </article>`).join("");
+        document.getElementById("log").innerHTML = s.log.map((l) => `<div><b>${l.t}</b>  ${l.m}</div>`).join("");
+      } catch (e) {}
+    }
+    tick();
+    setInterval(tick, 1200);
+  </script>
+</body>
+</html>
