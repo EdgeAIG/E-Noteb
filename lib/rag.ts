@@ -89,10 +89,15 @@ export function retrieve(
     return { chunk, score, source: sourceMap.get(chunk.sourceId)! };
   });
 
-  return scored
+  const positive = scored
     .filter((s) => s.score > 0 && s.source)
     .sort((a, b) => b.score - a.score)
     .slice(0, k);
+  if (positive.length) return positive;
+  return chunks
+    .slice(0, Math.min(k, 4))
+    .map((chunk) => ({ chunk, score: 0.05, source: sourceMap.get(chunk.sourceId)! }))
+    .filter((s) => s.source);
 }
 
 export function chunkText(notebookId: string, sourceId: string, text: string): Chunk[] {
