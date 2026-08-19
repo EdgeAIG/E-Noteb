@@ -49,7 +49,43 @@ export function bootStore() {
 
 export function getSettings(): AppSettings {
   bootStore();
-  return { ...defaultSettings(), ...readJson(file("settings.json"), defaultSettings()) };
+  const defaults = defaultSettings();
+  const saved = readJson<Partial<AppSettings>>(file("settings.json"), {});
+  const plugins = { ...defaults.plugins, ...(saved.plugins || {}) };
+  for (const id of Object.keys(defaults.plugins)) {
+    plugins[id] = {
+      enabled: plugins[id]?.enabled ?? defaults.plugins[id].enabled,
+      values: { ...(defaults.plugins[id].values || {}), ...(plugins[id]?.values || {}) },
+    };
+  }
+  return applyEnv({ ...defaults, ...saved, plugins });
+}
+
+function applyEnv(settings: AppSettings): AppSettings {
+  const next = { ...settings, plugins: { ...settings.plugins } };
+  const nimKey = process.env.NVIDIA_API_KEY || process.env.NIM_API_KEY;
+  if (nimKey) {
+    const cur = next.plugins["nvidia-nim"] || { enabled: false, values: {} };
+    next.plugins["nvidia-nim"] = {
+      enabled: true,
+      values: {
+        baseUrl: cur.values.baseUrl || process.env.NIM_BASE_URL || "https://integrate.api.nvidia.com/v1",
+        model: cur.values.model || process.env.NIM_MODEL || "meta/llama-3.1-70b-instruct",
+        apiKey: cur.values.apiKey || nimKey,
+      },
+    };
+    if (!next.defaultModelPlugin || next.defaultModelPlugin === "local-grounded") {
+      next.defaultModelPlugin = "nvidia-nim";
+    }
+  }
+  const openai = process.env.OPENAI_API_KEY;
+  if (openai) {
+    const cur = next.plugins.openai || { enabled: false, values: {} };
+    if (!cur.values.apiKey) {
+      next.plugins.openai = { enabled: true, values: { ...cur.values, apiKey: openai } };
+    }
+  }
+  return next;
 }
 
 export function saveSettings(next: AppSettings): AppSettings {

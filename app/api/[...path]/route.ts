@@ -22,15 +22,10 @@ import {
   touchNotebook,
 } from "@/lib/store";
 import { ingestFile, ingestText, ingestUrl } from "@/lib/ingest";
-import {
-  citationSystemPrompt,
-  completeWithPlugin,
-  groundedAnswer,
-  retrieve,
-} from "@/lib/rag";
+import { groundedAnswer, retrieve } from "@/lib/rag";
 import { generateArtifact } from "@/lib/studio";
 import { deepResearch } from "@/lib/research";
-import { PLUGIN_MANIFESTS, pluginConfigured } from "@/lib/plugins/manifest";
+import { PLUGIN_MANIFESTS } from "@/lib/plugins/manifest";
 import { nowIso, uid } from "@/lib/id";
 import type { ArtifactKind, ChatGoal, ResponseLength, Source } from "@/lib/types";
 
@@ -61,6 +56,10 @@ export async function GET(req: NextRequest, ctx: Ctx) {
   const [a, b, c, d] = path;
 
   if (a === "health") return json({ ok: true, name: "noteb" });
+  if (a === "status") {
+    const { connectionStatus } = await import("@/lib/llm");
+    return json(connectionStatus());
+  }
   if (a === "plugins") return json({ plugins: PLUGIN_MANIFESTS, settings: getSettings() });
   if (a === "settings") return json(getSettings());
   if (a === "notebooks" && !b) return json({ notebooks: listNotebooks() });
@@ -129,12 +128,12 @@ export async function POST(req: NextRequest, ctx: Ctx) {
 
   if (a === "notebooks" && b && c === "studio") {
     const body = await safeJson(req);
-    const art = generateArtifact({
+    const art = await generateArtifact({
       notebookId: b,
       kind: body.kind as ArtifactKind,
-      sourceIds: body.sourceIds,
-      instructions: body.instructions,
-      spec: body.spec,
+      sourceIds: body.sourceIds as string[] | undefined,
+      instructions: body.instructions as string | undefined,
+      spec: body.spec as Record<string, unknown> | undefined,
     });
     return json(saveArtifact(art));
   }
@@ -153,6 +152,25 @@ export async function POST(req: NextRequest, ctx: Ctx) {
       fromChatMessageId: body.fromChatMessageId,
     });
     return json(note);
+  }
+
+  if (a === "plugins" && b === "test") {
+    const body = await safeJson(req);
+    const { testModel } = await import("@/lib/llm");
+    const pluginId = String(body.pluginId || "");
+    const settings = getSettings();
+    const values = {
+      ...(settings.plugins[pluginId]?.values || {}),
+      ...((body.values as Record<string, string>) || {}),
+    };
+    return json(
+      await testModel({
+        pluginId,
+        apiKey: values.apiKey,
+        baseUrl: values.baseUrl,
+        model: values.model,
+      }),
+    );
   }
 
   if (a === "notebooks" && b && c === "research") {
@@ -261,21 +279,24 @@ async function handleChat(notebookId: string, body: Record<string, unknown>) {
   const settings = getSettings();
   const pluginId = String(body.modelPlugin || notebook.chatModelPlugin || settings.defaultModelPlugin);
   let content = local.content;
-  let citations = local.citations;
+  const citations = local.citations;
 
-  if (pluginId && pluginId !== "local-grounded" && pluginConfigured(pluginId, settings)) {
-    const cfg = settings.plugins[pluginId]?.values || {};
-    const llm = await completeWithPlugin({
-      pluginId,
-      apiKey: cfg.apiKey,
-      baseUrl: cfg.baseUrl,
-      model: cfg.model,
-      system: citationSystemPrompt(hits) + (customGoal ? `\n\nUser goal: ${customGoal}` : ""),
+  const { complete, resolveModel, citationSystemPrompt } = await import("@/lib/llm");
+  const handle = resolveModel(settings, pluginId);
+  if (handle) {
+    const llm = await complete({
+      handle,
+      system:
+        citationSystemPrompt(hits) +
+        (customGoal ? `\n\nUser goal: ${customGoal}` : "") +
+        (goal === "learning-guide" ? "\nTeach, then ask one follow-up." : ""),
       messages: session.messages.slice(-8).map((m) => ({ role: m.role, content: m.content })),
     });
-    if (llm) {
-      content = llm;
-      citations = local.citations;
+    if (llm.ok) content = llm.text;
+    else {
+      content =
+        local.content +
+        `\n\n_${handle.pluginId} did not answer (${llm.error}). This reply is from the local grounded engine._`;
     }
   }
 

@@ -3,13 +3,13 @@ import { nowIso, uid } from "./id";
 import { excerpt, retrieve } from "./rag";
 import { getSourceText, listSources } from "./store";
 
-export function generateArtifact(opts: {
+export async function generateArtifact(opts: {
   notebookId: string;
   kind: ArtifactKind;
   sourceIds?: string[];
   instructions?: string;
   spec?: Record<string, unknown>;
-}): StudioArtifact {
+}): Promise<StudioArtifact> {
   const sources = listSources(opts.notebookId).filter(
     (s) => s.enabled && (!opts.sourceIds || opts.sourceIds.includes(s.id)),
   );
@@ -22,7 +22,7 @@ export function generateArtifact(opts: {
     sources.map((s) => s.title).join(" ");
   const hits = retrieve(opts.notebookId, query, opts.sourceIds, 12);
   const payload = build(opts.kind, sources, hits, opts.instructions || "", opts.spec || {});
-  return {
+  const artifact: StudioArtifact = {
     id: uid("art"),
     notebookId: opts.notebookId,
     kind: opts.kind,
@@ -33,6 +33,66 @@ export function generateArtifact(opts: {
     spec: { instructions: opts.instructions || "", ...(opts.spec || {}) },
     payload,
   };
+
+  const { complete, parseJsonObject, resolveModel } = await import("./llm");
+  const handle = resolveModel();
+  if (!handle || !sources.length) return artifact;
+
+  const facts = uniqueFacts(hits, 12)
+    .map((f) => `- [${f.cite}] ${f.source}: ${f.text}`)
+    .join("\n");
+  const result = await complete({
+    handle,
+    maxTokens: 2200,
+    system:
+      "You write NotebookLM-quality Studio artifacts. Return ONLY a JSON object. No markdown fences, no preamble. Stay grounded in the provided passages. Do not invent facts.",
+    messages: [
+      {
+        role: "user",
+        content: studioPrompt(opts.kind, sources[0]?.title || "Untitled", facts, opts.instructions || "", opts.spec || {}),
+      },
+    ],
+  });
+  if (!result.ok) {
+    artifact.spec = { ...artifact.spec, model: handle.pluginId, modelError: result.error };
+    return artifact;
+  }
+  const parsed = parseJsonObject(result.text);
+  if (!parsed) {
+    artifact.spec = { ...artifact.spec, model: handle.pluginId, modelError: "Model did not return JSON." };
+    return artifact;
+  }
+  artifact.payload = { ...artifact.payload, ...parsed };
+  if (typeof parsed.title === "string") artifact.title = parsed.title;
+  artifact.spec = { ...artifact.spec, model: handle.pluginId };
+  return artifact;
+}
+
+function studioPrompt(
+  kind: ArtifactKind,
+  title: string,
+  facts: string,
+  instructions: string,
+  spec: Record<string, unknown>,
+): string {
+  const focus = instructions ? `Focus: ${instructions}\n` : "";
+  const shapes: Record<string, string> = {
+    "audio-overview": `{"title":"...","format":"${spec.format || "deep-dive"}","hosts":["Avery","Jules"],"durationEstimate":"8 min","turns":[{"speaker":"Avery","text":"..."}],"focus":"..."} — 10-16 spoken turns, natural two-host podcast.`,
+    "video-overview": `{"title":"...","scenes":[{"kind":"title|beat|close","heading":"...","body":"..."}]} — 7 scenes.`,
+    "mind-map": `{"title":"...","root":{"id":"root","label":"...","children":[{"id":"...","label":"...","children":[{"id":"...","label":"...","children":[]}]}]}}`,
+    flashcards: `{"title":"...","cards":[{"id":"c0","front":"...","back":"..."}]} — 8-12 cards.`,
+    quiz: `{"title":"...","questions":[{"id":"q0","prompt":"...","options":["...","...","...","..."],"answer":"...","explain":"..."}]}`,
+    "data-table": `{"title":"...","columns":["source","kind","words","topics","claim"],"rows":[{"source":"...","kind":"...","words":0,"topics":"...","claim":"..."}]}`,
+    "slide-deck": `{"title":"...","slides":[{"heading":"...","body":"...","kind":"title|body|close"}]}`,
+    infographic: `{"title":"...","kicker":"...","headline":"...","stats":[{"label":"...","value":"..."}],"beats":[{"n":"01","text":"..."}]}`,
+    report: `{"title":"...","kind":"Report","sections":[{"heading":"...","body":"..."}]}`,
+    briefing: `{"title":"...","kind":"Briefing doc","sections":[{"heading":"...","body":"..."}]}`,
+    "study-guide": `{"title":"...","kind":"Study guide","sections":[{"heading":"...","body":"..."}]}`,
+    faq: `{"title":"...","kind":"FAQ","sections":[{"heading":"...","body":"..."}]}`,
+    timeline: `{"title":"...","kind":"Timeline","sections":[{"heading":"...","body":"..."}]}`,
+    outline: `{"title":"...","kind":"Outline","sections":[{"heading":"...","body":"..."}]}`,
+  };
+  return `Notebook: ${title}\nKind: ${kind}\n${focus}\nPassages:\n${facts}\n\nJSON shape:\n${shapes[kind] || shapes.report}`;
 }
 
 function build(

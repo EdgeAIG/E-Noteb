@@ -20,11 +20,23 @@ export function SettingsApp() {
   const [plugins, setPlugins] = useState<PluginManifest[]>([]);
   const [saved, setSaved] = useState(false);
   const [kind, setKind] = useState<string>("model");
+  const [status, setStatus] = useState<{
+    model: { id: string; name: string; model: string };
+    research: string;
+    tts: string;
+    nimReady: boolean;
+  } | null>(null);
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testMsg, setTestMsg] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    api<{ plugins: PluginManifest[]; settings: AppSettings }>("/api/plugins").then((d) => {
+    Promise.all([
+      api<{ plugins: PluginManifest[]; settings: AppSettings }>("/api/plugins"),
+      api<{ model: { id: string; name: string; model: string }; research: string; tts: string; nimReady: boolean }>("/api/status"),
+    ]).then(([d, s]) => {
       setPlugins(d.plugins);
       setSettings(d.settings);
+      setStatus(s);
       document.documentElement.dataset.theme = d.settings.theme;
     });
   }, []);
@@ -141,25 +153,83 @@ export function SettingsApp() {
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       {p.fields.map((f) => (
                         <Field key={f.key} label={f.label} hint={f.help}>
-                          <Input
-                            type={f.type === "password" ? "password" : "text"}
-                            placeholder={f.placeholder}
-                            value={cfg.values[f.key] || ""}
-                            onChange={(e) =>
-                              save({
-                                ...settings,
-                                plugins: {
-                                  ...settings.plugins,
-                                  [p.id]: {
-                                    ...cfg,
-                                    values: { ...cfg.values, [f.key]: e.target.value },
+                          {f.type === "select" && f.options ? (
+                            <select
+                              className="h-10 w-full rounded-xl border border-line bg-card px-3 text-[13px]"
+                              value={cfg.values[f.key] || f.options[1]?.value || f.options[0]?.value || ""}
+                              onChange={(e) =>
+                                save({
+                                  ...settings,
+                                  plugins: {
+                                    ...settings.plugins,
+                                    [p.id]: { ...cfg, enabled: true, values: { ...cfg.values, [f.key]: e.target.value } },
                                   },
-                                },
-                              })
-                            }
-                          />
+                                  defaultModelPlugin: p.kind === "model" ? p.id : settings.defaultModelPlugin,
+                                })
+                              }
+                            >
+                              {f.options.map((o) => (
+                                <option key={o.value} value={o.value}>
+                                  {o.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <Input
+                              type={f.type === "password" ? "password" : "text"}
+                              placeholder={f.placeholder}
+                              value={cfg.values[f.key] || ""}
+                              onChange={(e) =>
+                                save({
+                                  ...settings,
+                                  plugins: {
+                                    ...settings.plugins,
+                                    [p.id]: {
+                                      ...cfg,
+                                      enabled: f.key === "apiKey" && e.target.value ? true : cfg.enabled,
+                                      values: { ...cfg.values, [f.key]: e.target.value },
+                                    },
+                                  },
+                                  defaultModelPlugin:
+                                    p.kind === "model" && f.key === "apiKey" && e.target.value
+                                      ? p.id
+                                      : settings.defaultModelPlugin,
+                                })
+                              }
+                            />
+                          )}
                         </Field>
                       ))}
+                    </div>
+                  )}
+                  {p.kind === "model" && !p.alwaysOn && (
+                    <div className="mt-3 flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        tone="line"
+                        disabled={testing === p.id}
+                        onClick={async () => {
+                          setTesting(p.id);
+                          try {
+                            const r = await api<{ ok: boolean; text: string; error?: string }>("/api/plugins/test", {
+                              method: "POST",
+                              body: JSON.stringify({ pluginId: p.id, values: cfg.values }),
+                            });
+                            setTestMsg((m) => ({
+                              ...m,
+                              [p.id]: r.ok ? `Connected — ${r.text.slice(0, 80)}` : r.error || "Failed",
+                            }));
+                            api("/api/status").then(setStatus).catch(() => {});
+                          } catch (e) {
+                            setTestMsg((m) => ({ ...m, [p.id]: (e as Error).message }));
+                          } finally {
+                            setTesting(null);
+                          }
+                        }}
+                      >
+                        {testing === p.id ? "Testing…" : "Test connection"}
+                      </Button>
+                      {testMsg[p.id] && <span className="text-[12px] text-muted">{testMsg[p.id]}</span>}
                     </div>
                   )}
                 </article>

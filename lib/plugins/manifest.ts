@@ -12,6 +12,47 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
     alwaysOn: true,
   },
   {
+    id: "nvidia-nim",
+    kind: "model",
+    name: "NVIDIA NIM",
+    description:
+      "Build.nvidia.com or a self-hosted NIM. OpenAI-compatible. One key drives chat, Studio, and Deep Research.",
+    fields: [
+      {
+        key: "apiKey",
+        label: "NVIDIA API key",
+        type: "password",
+        required: true,
+        placeholder: "nvapi-…",
+        help: "From https://build.nvidia.com — or leave blank and set NVIDIA_API_KEY in the environment.",
+      },
+      {
+        key: "baseUrl",
+        label: "Endpoint",
+        type: "url",
+        placeholder: "https://integrate.api.nvidia.com/v1",
+        help: "Cloud catalog, or your own NIM host ending in /v1.",
+      },
+      {
+        key: "model",
+        label: "Model",
+        type: "select",
+        placeholder: "meta/llama-3.1-70b-instruct",
+        options: [
+          { value: "meta/llama-3.1-8b-instruct", label: "Llama 3.1 8B Instruct" },
+          { value: "meta/llama-3.1-70b-instruct", label: "Llama 3.1 70B Instruct" },
+          { value: "meta/llama-3.3-70b-instruct", label: "Llama 3.3 70B Instruct" },
+          { value: "nvidia/llama-3.1-nemotron-70b-instruct", label: "Nemotron 70B Instruct" },
+          { value: "nvidia/llama-3.3-nemotron-super-49b-v1", label: "Nemotron Super 49B" },
+          { value: "mistralai/mistral-large-2-instruct", label: "Mistral Large 2" },
+          { value: "google/gemma-2-27b-it", label: "Gemma 2 27B" },
+          { value: "microsoft/phi-3.5-moe-instruct", label: "Phi-3.5 MoE" },
+        ],
+      },
+    ],
+    builtIn: true,
+  },
+  {
     id: "openai",
     kind: "model",
     name: "OpenAI",
@@ -105,6 +146,23 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
     fields: [],
     builtIn: true,
     alwaysOn: true,
+  },
+  {
+    id: "nvidia-nim-embed",
+    kind: "embed",
+    name: "NVIDIA NIM embeddings",
+    description: "nv-embedqa and other NIM embedding models. Same key as chat, or its own.",
+    fields: [
+      { key: "apiKey", label: "API key", type: "password", placeholder: "nvapi-…" },
+      { key: "baseUrl", label: "Endpoint", type: "url", placeholder: "https://integrate.api.nvidia.com/v1" },
+      {
+        key: "model",
+        label: "Model",
+        type: "text",
+        placeholder: "nvidia/nv-embedqa-e5-v5",
+      },
+    ],
+    builtIn: true,
   },
   {
     id: "openai-embed",

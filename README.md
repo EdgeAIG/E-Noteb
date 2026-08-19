@@ -13,6 +13,22 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). A seed notebook is created on first boot so you can judge the product immediately.
 
+## Connect NVIDIA NIM
+
+1. Get a key at [build.nvidia.com](https://build.nvidia.com) (`nvapi-…`).
+2. Open **Settings → model → NVIDIA NIM**, paste the key, pick a model (Llama 3.1 70B is the default).
+3. Click **Test connection**, then set **Default chat model** to NVIDIA NIM (this happens automatically when you paste a key).
+
+Or set env vars and skip the form:
+
+```bash
+NVIDIA_API_KEY=nvapi-…
+NIM_MODEL=meta/llama-3.1-70b-instruct          # optional
+NIM_BASE_URL=https://integrate.api.nvidia.com/v1 # or your self-hosted NIM
+```
+
+That one plugin drives **chat, Studio (audio/slides/quiz/…), and Deep Research**. Without it, those still run on the local grounded engine so the product is never blank.
+
 ## What is a plugin
 
 Anything that can be swapped without rewriting the product:

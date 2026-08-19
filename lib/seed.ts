@@ -194,7 +194,7 @@ export async function ensureSeed() {
   void session;
 
   for (const kind of ["briefing", "mind-map", "flashcards", "audio-overview"] as const) {
-    saveArtifact(generateArtifact({ notebookId: nb.id, kind }));
+    saveArtifact(await generateArtifact({ notebookId: nb.id, kind }));
   }
 
   const sleep = createNotebook({

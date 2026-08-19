@@ -23,6 +23,7 @@ export function Home({ initial = [] }: { initial?: Notebook[] }) {
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ model: { name: string; model: string }; nimReady: boolean } | null>(null);
 
   async function load() {
     const data = await api<{ notebooks: Notebook[] }>("/api/notebooks");
@@ -31,6 +32,9 @@ export function Home({ initial = [] }: { initial?: Notebook[] }) {
 
   useEffect(() => {
     load().catch(console.error);
+    api<{ model: { name: string; model: string }; nimReady: boolean }>("/api/status")
+      .then(setStatus)
+      .catch(() => {});
   }, []);
 
   const filtered = useMemo(() => {
@@ -85,10 +89,7 @@ export function Home({ initial = [] }: { initial?: Notebook[] }) {
             <Settings size={16} /> Settings
           </a>
           <form action="/new" method="POST">
-            <Button type="submit" tone="solid" disabled={busy} onClick={(e) => {
-              e.preventDefault();
-              create();
-            }}>
+            <Button type="submit" tone="solid" disabled={busy}>
               <Plus size={16} /> Create new
             </Button>
           </form>
@@ -100,7 +101,11 @@ export function Home({ initial = [] }: { initial?: Notebook[] }) {
           <div>
             <h1 className="font-serif text-[36px] leading-none tracking-[-0.035em]">Notebooks</h1>
             <p className="mt-2 max-w-xl text-[13.5px] text-muted">
-              Sources left, chat center, studio right. Grounded answers. Your keys.
+              {status
+                ? `Model: ${status.model.name}${status.model.model ? ` · ${status.model.model}` : ""}. ${
+                    status.nimReady ? "NVIDIA NIM is live." : "Add a NIM key in Settings for Gemini-level chat and Studio."
+                  }`
+                : "Sources left, chat center, studio right."}
             </p>
           </div>
           <div className="relative w-full max-w-sm">

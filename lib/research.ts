@@ -33,7 +33,19 @@ export async function deepResearch(notebookId: string, question: string): Promis
     webFindings = await webSearch(researchId, settings.plugins[researchId].values, question);
   }
 
-  const report = renderReport(question, sources, localFindings, webFindings);
+  let report = renderReport(question, sources, localFindings, webFindings);
+  const handle = resolveModel();
+  if (handle) {
+    const llm = await complete({
+      handle,
+      maxTokens: 2000,
+      system:
+        "You write a Deep Research briefing grounded in the notebook findings. Cite source titles. Mark web results as leads, not evidence. Markdown.",
+      messages: [{ role: "user", content: `Question: ${question}\n\nDraft to improve:\n\n${report}` }],
+    });
+    if (llm.ok) report = llm.text;
+    else report += `\n\n_Model (${handle.pluginId}) did not rewrite this briefing: ${llm.error}_`;
+  }
   const addedSource = await ingestText({
     notebookId,
     title: `Deep Research — ${question.slice(0, 72)}`,
