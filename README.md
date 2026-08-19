@@ -51,4 +51,4 @@ A seed notebook ("Attention is the primitive") is created on first boot so you c
 
 ## Stack
 
-Next.js 14 · TypeScript · Tailwind · a JSON/filesystem store in `data/runtime`. No cloud account required. No telemetry.
+Next.js 16 · React 19 · TypeScript · Tailwind · a JSON/filesystem store in `data/runtime`. No cloud account required. No telemetry.

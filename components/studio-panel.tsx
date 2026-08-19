@@ -8,7 +8,7 @@ import {
   Columns3,
   HelpCircle,
   Layers3,
-  Map,
+  Map as MapIcon,
   Presentation,
   Sparkles,
   Table2,
@@ -194,7 +194,10 @@ export function StudioPanel({
             setOpen(null);
             onChange();
           }}
-          onAsk={() => setOpen(null)}
+          onAsk={(q) => {
+            setOpen(null);
+            onAsk(q);
+          }}
           onOpenSource={onOpenSource}
         />
       )}

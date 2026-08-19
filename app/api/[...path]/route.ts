@@ -37,6 +37,12 @@ import type { ArtifactKind, ChatGoal, ResponseLength, Source } from "@/lib/types
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type Ctx = { params: Promise<{ path: string[] }> };
+
+async function segs(ctx: Ctx) {
+  return (await ctx.params).path || [];
+}
+
 async function ready() {
   await ensureSeed();
 }
@@ -49,9 +55,9 @@ function notFound(msg = "Not found") {
   return json({ error: msg }, 404);
 }
 
-export async function GET(req: NextRequest, ctx: { params: { path: string[] } }) {
+export async function GET(req: NextRequest, ctx: Ctx) {
   await ready();
-  const path = ctx.params.path || [];
+  const path = await segs(ctx);
   const [a, b, c, d] = path;
 
   if (a === "health") return json({ ok: true, name: "noteb" });
@@ -76,9 +82,9 @@ export async function GET(req: NextRequest, ctx: { params: { path: string[] } })
   return notFound();
 }
 
-export async function POST(req: NextRequest, ctx: { params: { path: string[] } }) {
+export async function POST(req: NextRequest, ctx: Ctx) {
   await ready();
-  const path = ctx.params.path || [];
+  const path = await segs(ctx);
   const [a, b, c] = path;
 
   if (a === "notebooks" && !b) {
@@ -158,9 +164,9 @@ export async function POST(req: NextRequest, ctx: { params: { path: string[] } }
   return notFound();
 }
 
-export async function PATCH(req: NextRequest, ctx: { params: { path: string[] } }) {
+export async function PATCH(req: NextRequest, ctx: Ctx) {
   await ready();
-  const [a, b, c, d] = ctx.params.path || [];
+  const [a, b, c, d] = await segs(ctx);
   const body = await safeJson(req);
 
   if (a === "notebooks" && b && !c) {
@@ -182,18 +188,19 @@ export async function PATCH(req: NextRequest, ctx: { params: { path: string[] } 
   return notFound();
 }
 
-export async function PUT(req: NextRequest, ctx: { params: { path: string[] } }) {
+export async function PUT(req: NextRequest, ctx: Ctx) {
   await ready();
-  if (ctx.params.path?.[0] === "settings") {
+  const path = await segs(ctx);
+  if (path[0] === "settings") {
     const body = await safeJson(req);
     return json(saveSettings({ ...getSettings(), ...body }));
   }
   return notFound();
 }
 
-export async function DELETE(_req: NextRequest, ctx: { params: { path: string[] } }) {
+export async function DELETE(_req: NextRequest, ctx: Ctx) {
   await ready();
-  const [a, b, c, d] = ctx.params.path || [];
+  const [a, b, c, d] = await segs(ctx);
   if (a === "notebooks" && b && !c) {
     deleteNotebook(b);
     return json({ ok: true });

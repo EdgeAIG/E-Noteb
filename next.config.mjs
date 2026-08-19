@@ -2,9 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: {
-    serverComponentsExternalPackages: ["mammoth", "unpdf"],
-  },
+  serverExternalPackages: ["mammoth", "unpdf"],
+  allowedDevOrigins: ["*"],
   async headers() {
     return [
       {
