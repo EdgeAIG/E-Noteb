@@ -16,12 +16,13 @@ import { api } from "@/lib/client";
 import { prettyDate } from "@/lib/id";
 import { Button, Input, Wordmark } from "./ui";
 
-export function Home() {
+export function Home({ initial = [] }: { initial?: Notebook[] }) {
   const router = useRouter();
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [notebooks, setNotebooks] = useState<Notebook[]>(initial);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   async function load() {
     const data = await api<{ notebooks: Notebook[] }>("/api/notebooks");
@@ -49,9 +50,12 @@ export function Home() {
 
   async function create() {
     setBusy(true);
+    setErr(null);
     try {
       const nb = await api<Notebook>("/api/notebooks", { method: "POST", body: "{}" });
       router.push(`/n/${nb.id}`);
+    } catch (e) {
+      setErr((e as Error).message || "Could not create a notebook.");
     } finally {
       setBusy(false);
     }
@@ -80,9 +84,14 @@ export function Home() {
           >
             <Settings size={16} /> Settings
           </a>
-          <Button tone="solid" onClick={create} disabled={busy}>
-            <Plus size={16} /> Create new
-          </Button>
+          <form action="/new" method="POST">
+            <Button type="submit" tone="solid" disabled={busy} onClick={(e) => {
+              e.preventDefault();
+              create();
+            }}>
+              <Plus size={16} /> Create new
+            </Button>
+          </form>
         </div>
       </header>
 
@@ -104,6 +113,8 @@ export function Home() {
             />
           </div>
         </section>
+
+        {err && <p className="mb-4 text-[13px] text-clay">{err}</p>}
 
         {!!recents.length && !q && (
           <section className="mb-10">
@@ -132,8 +143,9 @@ export function Home() {
             </h2>
           </div>
           {filtered.length === 0 ? (
+            <form action="/new" method="POST">
             <button
-              onClick={create}
+              type="submit"
               className="flex w-full flex-col items-center justify-center rounded-3xl border border-dashed border-line bg-card/60 px-8 py-20 text-center"
             >
               <span className="font-serif text-2xl">Create your first notebook</span>
@@ -141,6 +153,7 @@ export function Home() {
                 Drop in a paper, a lecture, a messy folder. Then ask it something only those pages can answer.
               </span>
             </button>
+            </form>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((n) => (
@@ -155,13 +168,15 @@ export function Home() {
                   onDelete={() => remove(n.id)}
                 />
               ))}
+              <form action="/new" method="POST" className="contents">
               <button
-                onClick={create}
+                type="submit"
                 className="flex min-h-[220px] flex-col items-center justify-center rounded-3xl border border-dashed border-line bg-card/40 text-muted hover:border-accent/40 hover:text-ink"
               >
                 <Plus size={22} />
                 <span className="mt-2 text-[13px] font-medium">New notebook</span>
               </button>
+              </form>
             </div>
           )}
         </section>
@@ -190,7 +205,7 @@ function NotebookCard({
   const [c1, c2, c3] = n.cover.palette;
   return (
     <article className="group relative overflow-hidden rounded-3xl border border-line bg-card shadow-lift">
-      <button onClick={onOpen} className="block w-full text-left">
+      <a href={`/n/${n.id}`} className="block w-full text-left">
         <div
           className={`notebook-cover motif-${n.cover.motif} relative h-28`}
           style={{ ["--c1" as string]: c1, ["--c2" as string]: c2, ["--c3" as string]: c3 }}
@@ -213,7 +228,7 @@ function NotebookCard({
             {n.sourceCount} source{n.sourceCount === 1 ? "" : "s"} · {prettyDate(n.updatedAt)}
           </p>
         </div>
-      </button>
+      </a>
       <div className="absolute right-2 top-[7.4rem]">
         <button
           className="rounded-lg p-1.5 text-muted opacity-0 hover:bg-ink/[.06] group-hover:opacity-100"
