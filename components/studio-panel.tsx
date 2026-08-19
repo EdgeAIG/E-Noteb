@@ -30,7 +30,7 @@ const TILES: {
   { kind: "video-overview", label: "Video Overview", hint: "A narrated briefing.", icon: Clapperboard },
   { kind: "slide-deck", label: "Slide Deck", hint: "Presenter-ready.", icon: Presentation },
   { kind: "infographic", label: "Infographic", hint: "One visual page.", icon: Layers3 },
-  { kind: "mind-map", label: "Mind Map", hint: "Click a node to ask.", icon: Map },
+  { kind: "mind-map", label: "Mind Map", hint: "Click a node to ask.", icon: MapIcon },
   { kind: "report", label: "Reports", hint: "Briefing, FAQ, guide.", icon: BookMarked },
   { kind: "flashcards", label: "Flashcards", hint: "Flip until it sticks.", icon: Columns3 },
   { kind: "quiz", label: "Quiz", hint: "Check yourself.", icon: HelpCircle },
